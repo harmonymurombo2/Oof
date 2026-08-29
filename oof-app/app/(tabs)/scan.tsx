@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useState, useRef } from "react";
 import { router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -16,7 +18,6 @@ export default function ScanScreen() {
       const { uri } = await cameraRef.current.takePictureAsync();
       setPhoto(uri);
       
-      // Navigate to receipt creation with photo
       router.push({
         pathname: "/receipt/new",
         params: { photoUri: uri }
@@ -26,8 +27,40 @@ export default function ScanScreen() {
     }
   }
 
+  async function pickFromGallery() {
+    try {
+      // Request permission
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert("Permission needed", "Please grant gallery access to upload receipts");
+        return;
+      }
+
+      // Pick image
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        const uri = result.assets[0].uri;
+        setPhoto(uri);
+        
+        router.push({
+          pathname: "/receipt/new",
+          params: { photoUri: uri }
+        });
+      }
+    } catch (error) {
+      console.error("Gallery error:", error);
+      Alert.alert("Error", "Failed to pick image from gallery");
+    }
+  }
+
   if (!permission) {
-    return <View />;
+    return <View style={styles.container} />;
   }
 
   if (!permission.granted) {
@@ -36,6 +69,9 @@ export default function ScanScreen() {
         <Text style={styles.text}>We need camera permission to scan receipts</Text>
         <TouchableOpacity onPress={requestPermission} style={styles.button}>
           <Text style={styles.buttonText}>Grant Permission</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={pickFromGallery} style={[styles.button, styles.galleryButton]}>
+          <Text style={styles.buttonText}>📁 Upload from Gallery</Text>
         </TouchableOpacity>
       </View>
     );
@@ -49,9 +85,18 @@ export default function ScanScreen() {
         facing="back"
       >
         <View style={styles.overlay}>
-          <TouchableOpacity onPress={takePicture} style={styles.captureButton}>
-            <View style={styles.captureInner} />
-          </TouchableOpacity>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity onPress={pickFromGallery} style={styles.galleryIconButton}>
+              <Ionicons name="images-outline" size={30} color="white" />
+              <Text style={styles.iconLabel}>Gallery</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={takePicture} style={styles.captureButton}>
+              <View style={styles.captureInner} />
+            </TouchableOpacity>
+            
+            <View style={styles.placeholder} />
+          </View>
         </View>
       </CameraView>
     </View>
@@ -66,6 +111,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end", 
     alignItems: "center",
     paddingBottom: 40,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    width: "100%",
+    paddingHorizontal: 30,
   },
   captureButton: {
     width: 70,
@@ -83,12 +135,29 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#6C63FF",
   },
-  text: { color: "white", textAlign: "center", margin: 20 },
+  galleryIconButton: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconLabel: {
+    color: "white",
+    fontSize: 12,
+    marginTop: 4,
+  },
+  placeholder: {
+    width: 50,
+  },
+  text: { color: "white", textAlign: "center", margin: 20, fontSize: 16 },
   button: { 
     backgroundColor: "#6C63FF", 
     padding: 15, 
     borderRadius: 10,
-    margin: 20,
+    margin: 10,
+    minWidth: 200,
+    alignItems: "center",
   },
-  buttonText: { color: "white", textAlign: "center", fontWeight: "bold" },
+  galleryButton: {
+    backgroundColor: "#4CAF50",
+  },
+  buttonText: { color: "white", textAlign: "center", fontWeight: "bold", fontSize: 16 },
 });

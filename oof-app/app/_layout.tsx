@@ -2,8 +2,14 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useEffect } from "react";
+import { runMigrations } from "@/lib/db/migrate";
 
 export default function RootLayout() {
+  useEffect(() => {
+    runMigrations();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <StatusBar style="auto" />

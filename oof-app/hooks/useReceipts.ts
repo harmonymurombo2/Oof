@@ -8,7 +8,7 @@ import { InferSelectModel } from "drizzle-orm";
 type Receipt = InferSelectModel<typeof receipts>;
 
 export function useReceipts() {
-  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [receiptsData, setReceiptsData] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -22,7 +22,9 @@ export function useReceipts() {
         .select()
         .from(receipts)
         .orderBy(desc(receipts.createdAt));
-      setReceipts(result);
+      
+      // Type assertion to fix the error
+      setReceiptsData(result as Receipt[]);
     } catch (error) {
       console.error("Failed to load receipts:", error);
     } finally {
@@ -30,5 +32,5 @@ export function useReceipts() {
     }
   }
   
-  return { receipts, loading, refresh: loadReceipts };
+  return { receipts: receiptsData, loading, refresh: loadReceipts };
 }
